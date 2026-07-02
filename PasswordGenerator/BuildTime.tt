@@ -1,0 +1,19 @@
+﻿<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ output extension=".txt" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text" #>
+<#
+    // Определяем путь к выходному файлу (в корне решения)
+    string solutionDir = Host.ResolvePath("..");
+    string buildTimeFile = Path.Combine(solutionDir, "BuildTime.txt");
+    
+    // Формируем строку с текущим временем UTC (или локальным)
+    string buildTime = DateTime.Now.ToString("yyyy.MM.dd.HHmm");
+    
+    // Записываем в файл (перезаписываем)
+    File.WriteAllText(buildTimeFile, buildTime, Encoding.UTF8);
+    
+    // Выводим в выходной файл (не обязательно, но можно для отладки)
+    //WriteLine($"BuildTime file created at {buildTimeFile}");
+    WriteLine(buildTime);
+#>

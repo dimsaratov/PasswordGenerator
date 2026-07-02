@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <SolutionDir>$([System.IO.Path]::GetDirectoryName($(MSBuildThisFileDirectory)))</SolutionDir>
+    <BuildTimeFile>$([System.IO.Path]::Combine($(SolutionDir), 'BuildTime.txt'))</BuildTimeFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="Exists('$(BuildTimeFile)')">
+    <_BuildTimeContent>$([System.IO.File]::ReadAllText('$(BuildTimeFile)').Trim())</_BuildTimeContent>
+    <VersionSuffix>$(_BuildTimeContent)</VersionSuffix>
+    <AssemblyVersion>$(VersionSuffix)</AssemblyVersion>
+    <FileVersion>$(VersionSuffix)</FileVersion>
+    <Version>$(VersionSuffix)</Version>
+  </PropertyGroup>
+
+</Project>
