@@ -2,7 +2,7 @@
 <#@ output extension=".md" #>
 MIT License
 
-Copyright (c) [<#= this.year #>] [Kozupitsa DmA]
+Copyright (c) <#= this.year #> Kozupitsa DmA
 Password generator is a cryptographic solution for .NET
 
 Description

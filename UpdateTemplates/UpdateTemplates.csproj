@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TransformOnBuild>true</TransformOnBuild>
@@ -9,53 +9,36 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="..\BuildTime.txt">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>BuildTime.tt</DependentUpon>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\LICENSE.txt">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>LICENSE.tt</DependentUpon>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>   
-    <None Include="..\BuildTime.tt">
+    
+    <None Include="BuildTime.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>BuildTime.txt</LastGenOutput>
     </None>
     
-    <None Include="..\LICENSE.tt">
+    <None Include="LICENSE.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>LICENSE.txt</LastGenOutput>
     </None>
 
-    <None Include="..\LICENSE.txt">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>LICENSE.tt</DependentUpon>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    
-    <None Include="..\Readme.md">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Readme.tt</DependentUpon>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\Readme.tt">
+    <None Include="Readme.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Readme.md</LastGenOutput>
     </None>
+    
   </ItemGroup>
-
 
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Message Importance="High" Text="Обновление BuildTime.txt перед сборкой PasswordGenerator..." />
+    <Exec Command="&quot;$(DevEnvDir)TextTransformCore.exe&quot; &quot;$(ProjectDir)BuildTime.tt&quot; -out &quot;$(SolutionDir)BuildTime.txt&quot;" />
+    <Message Importance="High" Text="Обновление LICENSE.txt перед сборкой PasswordGenerator..." />
+    <Exec Command="&quot;$(DevEnvDir)TextTransformCore.exe&quot; &quot;$(ProjectDir)LICENSE.tt&quot; -out &quot;$(SolutionDir)LICENSE.txt&quot;" />
+    <Message Importance="High" Text="Обновление README.md перед сборкой PasswordGenerator..." />
+    <Exec Command="&quot;$(DevEnvDir)TextTransformCore.exe&quot; &quot;$(ProjectDir)Readme.tt&quot; -out &quot;$(SolutionDir)Readme.md&quot;" />
+  </Target>
+
 
 </Project>

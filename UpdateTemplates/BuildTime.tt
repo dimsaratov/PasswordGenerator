@@ -6,7 +6,7 @@
     // Определяем путь к выходному файлу (в корне решения)
     string solutionDir = Host.ResolvePath("..");
     string buildTimeFile = Path.Combine(solutionDir, "BuildTime.txt");
-    
+        
     // Формируем строку с текущим временем UTC (или локальным)
     string buildTime = DateTime.Now.ToString("yyyy.MM.dd.HHmm");
     

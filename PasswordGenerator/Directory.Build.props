@@ -4,19 +4,12 @@
     <BuildTimeFile>$([System.IO.Path]::Combine($(SolutionDir), 'BuildTime.txt'))</BuildTimeFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'BuildTime' And Exists('$(BuildTimeFile)')">
+  <PropertyGroup Condition="Exists('$(BuildTimeFile)')">
     <_BuildTimeContent>$([System.IO.File]::ReadAllText('$(BuildTimeFile)').Trim())</_BuildTimeContent>
     <VersionSuffix>$(_BuildTimeContent)</VersionSuffix>
     <AssemblyVersion>$(VersionSuffix)</AssemblyVersion>
     <FileVersion>$(VersionSuffix)</FileVersion>
     <Version>$(VersionSuffix)</Version>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!--Тип исключения System.Exception является недостаточно определенным.-->
-    <NoWarn>$(NoWarn);CA2201</NoWarn>
-    <!--Произошла ошибка при получении данных уязвимости пакета-->
-    <NoWarn>$(NoWarn);NU1900</NoWarn>
   </PropertyGroup>
 
 </Project>

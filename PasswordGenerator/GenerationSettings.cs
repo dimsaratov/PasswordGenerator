@@ -380,6 +380,15 @@ namespace PasswordGenerator
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Generates and returns a new password according to the current settings
+        /// </summary>
+        /// <returns></returns>
+        public string GetNewPassword()
+        {
+            return Generator.Generate(this);
+        }
+
         private char[] GetSpecialChars(char[] input)
         {
             return [.. input.Where(allowedSet.Contains)];

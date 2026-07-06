@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) [2026] [Kozupitsa DmA]
+Copyright (c) 2026 Kozupitsa DmA
 Password generator is a cryptographic solution for .NET
 
 Description
