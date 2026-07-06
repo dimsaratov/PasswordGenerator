@@ -32,11 +32,11 @@
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <Message Importance="High" Text="Обновление BuildTime.txt перед сборкой PasswordGenerator..." />
+    <Message Importance="High" Text="Обновление BuildTime.txt перед сборкой $(TargetFramework) PasswordGenerator..." />
     <Exec Command="&quot;$(DevEnvDir)TextTransformCore.exe&quot; &quot;$(ProjectDir)BuildTime.tt&quot; -out &quot;$(SolutionDir)BuildTime.txt&quot;" />
-    <Message Importance="High" Text="Обновление LICENSE.txt перед сборкой PasswordGenerator..." />
+    <Message Importance="High" Text="Обновление LICENSE.txt перед сборкой $(TargetFramework) PasswordGenerator..." />
     <Exec Command="&quot;$(DevEnvDir)TextTransformCore.exe&quot; &quot;$(ProjectDir)LICENSE.tt&quot; -out &quot;$(SolutionDir)LICENSE.txt&quot;" />
-    <Message Importance="High" Text="Обновление README.md перед сборкой PasswordGenerator..." />
+    <Message Importance="High" Text="Обновление README.md перед сборкой $(TargetFramework) PasswordGenerator..." />
     <Exec Command="&quot;$(DevEnvDir)TextTransformCore.exe&quot; &quot;$(ProjectDir)Readme.tt&quot; -out &quot;$(SolutionDir)Readme.md&quot;" />
   </Target>
 
