@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Security;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace PasswordGenerator
@@ -38,7 +39,7 @@ namespace PasswordGenerator
         private static readonly string[] setNames = Enum.GetNames<CharacterSet>();
 
         /// <summary>
-        /// Generator is a static class with the Generate(GenerationSettings) method.
+        /// A static method for generating a password as a string Generate(GenerationSettings).
         /// </summary>
         /// <param name="settings"></param>
         /// <returns></returns>
@@ -60,6 +61,17 @@ namespace PasswordGenerator
                 result.Append(GetRandomChar(charSet));
             }
             return ShuffleString(result.ToString());
+        }
+
+        /// <summary>
+        /// A static method for generating a password as a Secure String Generate(GenerationSettings).
+        /// </summary>
+        /// <param name="settings"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public static SecureString GenerateAsSecure(GenerationSettings settings)
+        {
+            return Generate(settings).ToSecureString();
         }
 
         private static void BaseFill(StringBuilder result, GenerationSettings settings)

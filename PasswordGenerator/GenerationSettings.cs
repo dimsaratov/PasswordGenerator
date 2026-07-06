@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -384,9 +385,9 @@ namespace PasswordGenerator
         /// Generates and returns a new password according to the current settings
         /// </summary>
         /// <returns></returns>
-        public string GetNewPassword()
+        public SecureString GetNewPassword()
         {
-            return Generator.Generate(this);
+            return Generator.Generate(this).ToSecureString();
         }
 
         private char[] GetSpecialChars(char[] input)

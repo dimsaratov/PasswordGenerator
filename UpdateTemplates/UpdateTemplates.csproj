@@ -8,21 +8,27 @@
     <TransformOutOfDateOnly>false</TransformOutOfDateOnly>
   </PropertyGroup>
 
+  <PropertyGroup>
+     <Readme>README.md</Readme>
+     <License>LECENSE.txt</License>
+     <BuildTime>BuildTime.txt</BuildTime>
+  </PropertyGroup>
+  
   <ItemGroup>
     
     <None Include="BuildTime.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>BuildTime.txt</LastGenOutput>
+      <LastGenOutput>$(BuildTime)</LastGenOutput>
     </None>
     
     <None Include="LICENSE.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>LICENSE.txt</LastGenOutput>
+      <LastGenOutput>$(License)</LastGenOutput>
     </None>
-
-    <None Include="Readme.tt">
+    
+    <None Include="README.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>Readme.md</LastGenOutput>
+      <LastGenOutput>$(Readme)</LastGenOutput>
     </None>
     
   </ItemGroup>
@@ -32,12 +38,12 @@
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <Message Importance="High" Text="Обновление BuildTime.txt перед сборкой $(TargetFramework) PasswordGenerator..." />
-    <Exec Command="&quot;$(DevEnvDir)TextTransformCore.exe&quot; &quot;$(ProjectDir)BuildTime.tt&quot; -out &quot;$(SolutionDir)BuildTime.txt&quot;" />
-    <Message Importance="High" Text="Обновление LICENSE.txt перед сборкой $(TargetFramework) PasswordGenerator..." />
-    <Exec Command="&quot;$(DevEnvDir)TextTransformCore.exe&quot; &quot;$(ProjectDir)LICENSE.tt&quot; -out &quot;$(SolutionDir)LICENSE.txt&quot;" />
-    <Message Importance="High" Text="Обновление README.md перед сборкой $(TargetFramework) PasswordGenerator..." />
-    <Exec Command="&quot;$(DevEnvDir)TextTransformCore.exe&quot; &quot;$(ProjectDir)Readme.tt&quot; -out &quot;$(SolutionDir)Readme.md&quot;" />
+    <Message Importance="High" Text="Обновление $(BuildTime) перед сборкой $(TargetFramework) PasswordGenerator..." />
+    <Exec Command="&quot;$(DevEnvDir)TextTransformCore.exe&quot; &quot;$(ProjectDir)BuildTime.tt&quot; -out &quot;$(SolutionDir)$(BuildTime)&quot;" />
+    <Message Importance="High" Text="Обновление $(License) перед сборкой $(TargetFramework) PasswordGenerator..." />
+    <Exec Command="&quot;$(DevEnvDir)TextTransformCore.exe&quot; &quot;$(ProjectDir)LICENSE.tt&quot; -out &quot;$(SolutionDir)$(License)&quot;" />
+    <Message Importance="High" Text="Обновление $(Readme) перед сборкой $(TargetFramework) PasswordGenerator..." />
+    <Exec Command="&quot;$(DevEnvDir)TextTransformCore.exe&quot; &quot;$(ProjectDir)Readme.tt&quot; -out &quot;$(SolutionDir)$(Readme)&quot;" />
   </Target>
 
 

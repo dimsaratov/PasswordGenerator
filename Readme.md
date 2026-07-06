@@ -1,4 +1,3 @@
-MIT License
 
 Copyright (c) 2026 Kozupitsa DmA
 Password generator is a cryptographic solution for .NET
