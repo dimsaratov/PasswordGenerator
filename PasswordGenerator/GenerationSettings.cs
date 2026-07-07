@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -28,7 +29,7 @@ namespace PasswordGenerator
     /// '$', '%' } }; // Verify settings are valid if (settings.IsCorrect) { string password =
     /// Generator.Generate(settings); }</code>
     /// </example>
-    public class GenerationSettings : INotifyPropertyChanged
+    public class GenerationSettings : INotifyPropertyChanged, ICloneable, INotifyDataErrorInfo
     {
         /// <summary>
         /// The minimum allowed password length value
@@ -39,8 +40,8 @@ namespace PasswordGenerator
         /// A basic set of special characters for password generation
         /// </summary>
         public const string BaseChars = @"~`!@#$%^&*()-_=+[]{};:'"",./<>?|\";
-
         #region Variable
+        private readonly Dictionary<string, List<string>> _errors = [];
         private readonly HashSet<char> allowSpecialChars;
         private readonly HashSet<char> currentSpecialChars = [];
         private PropertyChangedEventHandler? onPropertyChanged;
@@ -49,6 +50,15 @@ namespace PasswordGenerator
         private bool useUppercase = true;
         private bool useLowercase = true;
         private string symbols = BaseChars;
+        private bool useDigits = true;
+        private bool useSymbols = true;
+        private int extraCharsPerSet = 3;
+
+        /// <summary>
+        /// Cached hash code of the <see cref="currentSpecialChars"/> set.
+        /// Updated whenever the set changes to avoid recomputing in <see cref="GetHashCode"/>.
+        /// </summary>
+        private int _symbolsHashCode;
         #endregion
 
         #region Property
@@ -76,27 +86,26 @@ namespace PasswordGenerator
             get => symbols;
             set
             {
-                ArgumentNullException.ThrowIfNullOrEmpty(value);
                 if (symbols != value)
                 {
-                    SetSpecialCharsInternal([.. value]);
+                    SetSpecialCharsInternal(value is null ? null : [.. value]);
                 }
             }
         }
 
         /// <summary>
-        /// Сollection of special characters for password generation. Default value ~`!@#$%^&amp;*()-
-        /// _=+[]{};:'"",./&lt;&gt;?|\ The number of special characters must be at least 3
+        /// Collection of special characters for password generation.
         /// </summary>
-        public char[] SpecialChars
-        {
-            get => [.. currentSpecialChars];
-            set
-            {
-                ArgumentNullException.ThrowIfNull(value);
-                SetSpecialCharsInternal(value);
-            }
-        }
+        /// <remarks>
+        /// <para>
+        /// When setting this property, only characters present in <see cref="BaseChars"/> are retained.
+        /// </para>
+        /// <para>
+        /// <b>Validation:</b> At least 3 supported characters must be provided. If validation fails,
+        /// an error is added via <see cref="INotifyDataErrorInfo"/> and the current set remains unchanged.
+        /// </para>
+        /// </remarks>
+        public char[] SpecialChars { get => [.. currentSpecialChars]; set => SetSpecialCharsInternal(value); }
 
         /// <summary>
         /// Minimum password length. The default value is 8. Values less than 8 are not allowed
@@ -149,20 +158,29 @@ namespace PasswordGenerator
         /// </summary>
         public int ExtraCharsPerSet
         {
-            get;
+            get => extraCharsPerSet;
             set
             {
-                if (value < 1)
+                if (extraCharsPerSet != value)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), "ExtraCharsPerSet must be at least 1.");
-                }
-                if (field != value)
-                {
-                    field = value;
+                    if (value < 1)
+                    {
+                        AddError(nameof(ExtraCharsPerSet), "ExtraCharsPerSet must be at least 1.");
+                    }
+                    else
+                    {
+                        ClearErrors(nameof(ExtraCharsPerSet));
+                    }
+
+                    if (value >= 1)
+                    {
+                        extraCharsPerSet = value;
+                    }
                     OnPropertyChanged(nameof(ExtraCharsPerSet));
                 }
             }
-        } = 3;
+        }
+
 
         /// <summary>
         /// Use uppercase letters. Default value True
@@ -217,32 +235,43 @@ namespace PasswordGenerator
         /// </summary>
         public bool UseDigits
         {
-            get;
+            get => useDigits;
             set
             {
-                if (field != value)
+                if (useDigits != value)
                 {
-                    field = value;
+                    useDigits = value;
                     OnPropertyChanged(nameof(UseDigits));
                 }
             }
-        } = true;
+        }
 
         /// <summary>
-        /// Use special characters. Default value True
+        /// Use special characters. Default value <c>true</c>.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This property determines whether special characters are included in generated passwords.
+        /// It is not automatically modified when setting <see cref="SpecialChars"/> or <see cref="Symbols"/>.
+        /// </para>
+        /// <para>
+        /// However, note that <see cref="SpecialChars"/> validation requires at least 3 supported characters.
+        /// If you set an invalid set, an error will be added via <see cref="INotifyDataErrorInfo"/>,
+        /// and the current set remains unchanged.
+        /// </para>
+        /// </remarks>
         public bool UseSymbols
         {
-            get;
+            get => useSymbols;
             set
             {
-                if (field != value)
+                if (useSymbols != value)
                 {
-                    field = value;
+                    useSymbols = value;
                     OnPropertyChanged(nameof(UseSymbols));
                 }
             }
-        } = true;
+        }
 
         /// <summary>
         /// Returns true if at least one character set is used and false if none of the character sets are used.
@@ -284,6 +313,65 @@ namespace PasswordGenerator
             allowSpecialChars = [.. BaseChars];
             currentSpecialChars = [.. BaseChars];
             symbols = BaseChars;
+            _symbolsHashCode = ComputeSymbolsHashCode();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GenerationSettings"/> class by copying the values
+        /// from another <see cref="GenerationSettings"/> object.
+        /// </summary>
+        /// <param name="other">
+        /// The <see cref="GenerationSettings"/> instance to copy from. This parameter cannot be <c>null</c>.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="other"/> is <c>null</c>.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// This constructor performs a <b>deep copy</b> of all mutable state:
+        /// <list type="bullet">
+        /// <item><description>
+        /// The <see cref="currentSpecialChars"/> collection is cloned into a new <see cref="HashSet{T}"/>,
+        /// ensuring that changes to the copy do not affect the original and vice versa.
+        /// </description></item>
+        /// <item><description>
+        /// The <see cref="allowSpecialChars"/> collection is <b>not</b> cloned because it is
+        /// <c>readonly</c> and never modified after construction. Both instances share the same reference,
+        /// which is safe and efficient.
+        /// </description></item>
+        /// <item><description>
+        /// All value-type fields (<see cref="MinLength"/>, <see cref="MaxLength"/>, booleans, etc.)
+        /// are copied by value, as expected.
+        /// </description></item>
+        /// </list>
+        /// </para>
+        /// <para>
+        /// This constructor is used internally by the <see cref="Clone"/> method to provide a deep copy
+        /// of the settings, and can also be used directly by consumers who need an independent copy.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// var original = new GenerationSettings { MinLength = 12, UseDigits = false };
+        /// var copy = new GenerationSettings(original);
+        /// copy.MinLength = 20; // Does not affect 'original'
+        /// </code>
+        /// </example>
+        public GenerationSettings(GenerationSettings other)
+        {
+            ArgumentNullException.ThrowIfNull(other);
+
+            allowSpecialChars = other.allowSpecialChars;
+            currentSpecialChars = [.. other.currentSpecialChars];
+            symbols = other.symbols;
+            min = other.min;
+            max = other.max;
+            useUppercase = other.useUppercase;
+            useLowercase = other.useLowercase;
+            useDigits = other.useDigits;
+            useSymbols = other.useSymbols;
+            extraCharsPerSet = other.extraCharsPerSet;
+            _symbolsHashCode = other._symbolsHashCode;
         }
 
         #region Methods
@@ -364,26 +452,12 @@ namespace PasswordGenerator
         /// Resets the special characters set to the default <see cref="BaseChars"/> value.
         /// </summary>
         /// <remarks>
-        /// This method replaces the current <see cref="SpecialChars"/> with the default set
-        /// defined by <see cref="BaseChars"/>. If the current set already equals the default set,
-        /// no changes are made.
+        /// This method replaces the current <see cref="SpecialChars"/> with the default set defined by <see
+        /// cref="BaseChars"/>. Since <see cref="BaseChars"/> always contains at least 3 characters, the <see
+        /// cref="UseSymbols"/> property  will remain or become <c>true</c> if it was previously <c>false</c> (because
+        /// the set will be non‑empty).
         /// </remarks>
-        public void DefaultSpecialChars()
-        {
-            if (!currentSpecialChars.SetEquals(allowSpecialChars))
-            {
-                currentSpecialChars.Clear();
-                foreach (char c in allowSpecialChars)
-                {
-                    currentSpecialChars.Add(c);
-                }
-                symbols = new string([.. currentSpecialChars]);
-
-                OnPropertyChanged(nameof(SpecialChars));
-                OnPropertyChanged(nameof(Symbols));
-                OnPropertyChanged();
-            }
-        }
+        public void DefaultSpecialChars() { SetSpecialCharsInternal([.. BaseChars]); }
 
         /// <summary>
         /// If MaxLength is not equal to MinLength, returns an arbitrary length for the password in the range from
@@ -399,7 +473,7 @@ namespace PasswordGenerator
         /// <returns></returns>
         public string GetCharacterSet()
         {
-            StringBuilder sb = new();
+            StringBuilder sb = new(256);
             if (UseUppercase)
             {
                 sb.Append(Uppercase);
@@ -421,6 +495,8 @@ namespace PasswordGenerator
             return sb.ToString();
         }
 
+        #endregion
+
         #region Private Methods
         private static void ValidateLength(
             int value,
@@ -438,39 +514,196 @@ namespace PasswordGenerator
         /// Sets the special characters from the given array, filtering out unsupported characters.
         /// </summary>
         /// <param name="chars">Array of characters to set.</param>
-        /// <exception cref="ArgumentException">Thrown when less than 3 supported characters are provided.</exception>
-        private void SetSpecialCharsInternal(char[] chars)
+        /// <remarks>
+        /// <para>
+        /// This method filters <paramref name="chars"/> using the allowed set (<see cref="allowSpecialChars"/>).
+        /// Only characters that exist in the allowed set are retained.
+        /// </para>
+        /// <para>
+        /// <b>Validation rules:</b>
+        /// <list type="bullet">
+        /// <item><description>
+        /// If <paramref name="chars"/> is <c>null</c>, an error is added for the properties
+        /// <see cref="Symbols"/> and <see cref="SpecialChars"/>, and the current set remains unchanged.
+        /// </description></item>
+        /// <item><description>
+        /// If after filtering fewer than 3 valid characters remain, an error is added for the properties
+        /// <see cref="Symbols"/> and <see cref="SpecialChars"/>, and the current set remains unchanged.
+        /// </description></item>
+        /// <item><description>
+        /// If at least 3 valid characters are present, any existing errors for <see cref="Symbols"/>
+        /// and <see cref="SpecialChars"/> are cleared, and the internal storage is updated.
+        /// </description></item>
+        /// </list>
+        /// </para>
+        /// <para>
+        /// <b>Note:</b> Unlike previous versions, this method no longer automatically disables
+        /// <see cref="UseSymbols"/> when the set becomes empty, because an empty set is now considered
+        /// invalid and will not be accepted.
+        /// </para>
+        /// </remarks>
+        private void SetSpecialCharsInternal(char[]? chars)
         {
+            ClearErrors(nameof(Symbols));
+            ClearErrors(nameof(SpecialChars));
+
+            if (chars is null)
+            {
+                AddError(nameof(Symbols), "Special characters array cannot be null.");
+                AddError(nameof(SpecialChars), "Special characters array cannot be null.");
+                return;
+            }
+
             HashSet<char> validChars = [.. chars.Where(allowSpecialChars.Contains)];
+
             if (validChars.Count < 3)
             {
-                throw new ArgumentException("At least 3 supported special characters must be provided.");
+                AddError(nameof(Symbols), $"At least 3 supported special characters are required. Provided: {validChars.Count}.");
+                AddError(nameof(SpecialChars), $"At least 3 supported special characters are required. Provided: {validChars.Count}.");
+                return;
             }
 
             bool setChanged = !currentSpecialChars.SetEquals(validChars);
-
             if (setChanged)
             {
                 currentSpecialChars.Clear();
                 foreach (char c in validChars)
-                {
-                    currentSpecialChars.Add(c);
-                }
+                { currentSpecialChars.Add(c); }
+
+                _symbolsHashCode = ComputeSymbolsHashCode();
             }
 
             string newSymbols = new([.. currentSpecialChars]);
-
-            if (setChanged || newSymbols != symbols)
+            if (setChanged)
             {
                 symbols = newSymbols;
-
                 OnPropertyChanged(nameof(SpecialChars));
                 OnPropertyChanged(nameof(Symbols));
                 OnPropertyChanged();
             }
         }
+
+        private int ComputeSymbolsHashCode()
+        {
+            int hash = 0;
+            foreach (char c in currentSpecialChars)
+            {
+                hash ^= c.GetHashCode();
+            }
+            return hash;
+        }
         #endregion
 
+        #region INotifyDataErrorInfo
+
+        /// <inheritdoc/>
+        public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
+
+        /// <inheritdoc/>
+        public bool HasErrors => _errors.Count != 0;
+
+        /// <inheritdoc/>
+        public IEnumerable GetErrors(string? propertyName)
+        {
+            return string.IsNullOrEmpty(propertyName)
+                ? _errors.SelectMany(x => x.Value)
+                : _errors.TryGetValue(propertyName, out List<string>? list) ? list : Enumerable.Empty<string>();
+        }
+
+        private void AddError(string propertyName, string error)
+        {
+            if (!_errors.TryGetValue(propertyName, out List<string>? list))
+            {
+                list = [];
+                _errors[propertyName] = list;
+            }
+            list.Add(error);
+            ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(propertyName));
+        }
+
+        private void ClearErrors(string propertyName)
+        {
+            if (_errors.Remove(propertyName))
+            {
+                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(propertyName));
+            }
+        }
+
+        #endregion
+
+        #region ICloneable
+
+        /// <summary>
+        /// Creates a deep copy of the current <see cref="GenerationSettings"/> object.
+        /// </summary>
+        /// <returns>
+        /// A new <see cref="GenerationSettings"/> instance that is a deep copy of the original.
+        /// </returns>
+        /// <remarks>
+        /// <para>
+        /// This method creates a new instance using the copy constructor, which clones all mutable state,
+        /// including the <see cref="currentSpecialChars"/> collection. The resulting object is fully independent
+        /// of the original.
+        /// </para>
+        /// <para>
+        /// The <see cref="allowSpecialChars"/> collection is shared between instances because it is immutable
+        /// and never modified after construction.
+        /// </para>
+        /// </remarks>
+        public GenerationSettings Clone() { return new(this); }
+
+        /// <summary>
+        /// Determines whether the current <see cref="GenerationSettings"/> object has the same content as another.
+        /// </summary>
+        /// <param name="other">The other object to compare with.</param>
+        /// <returns>
+        /// <c>true</c> if all relevant properties are equal; otherwise, <c>false</c>.
+        /// </returns>
+        public bool Equals(GenerationSettings? other)
+        {
+            return other is not null
+                && (ReferenceEquals(this, other)
+                || (MinLength == other.MinLength &&
+                   MaxLength == other.MaxLength &&
+                   UseUppercase == other.UseUppercase &&
+                   UseLowercase == other.UseLowercase &&
+                   UseDigits == other.UseDigits &&
+                   UseSymbols == other.UseSymbols &&
+                   ExtraCharsPerSet == other.ExtraCharsPerSet &&
+                   currentSpecialChars.SetEquals(other.currentSpecialChars)));
+        }
+
+        /// <inheritdoc/>
+        public override bool Equals(object? obj) { return Equals(obj as GenerationSettings); }
+
+        /// <inheritdoc/>
+        public override int GetHashCode()
+        {
+            int hash = HashCode.Combine(MinLength, MaxLength, UseUppercase, UseLowercase,
+                                         UseDigits, UseSymbols, ExtraCharsPerSet);
+            return HashCode.Combine(hash, _symbolsHashCode);
+        }
+
+        /// <summary>
+        /// Determines whether two <see cref="GenerationSettings"/> objects are equal by content.
+        /// </summary>
+        /// <param name="left">The first object.</param>
+        /// <param name="right">The second object.</param>
+        /// <returns><c>true</c> if equal; otherwise, <c>false</c>.</returns>
+        public static bool operator ==(GenerationSettings? left, GenerationSettings? right)
+        {
+            return Equals(left, right);
+        }
+
+        /// <summary>
+        /// Determines whether two <see cref="GenerationSettings"/> objects are not equal by content.
+        /// </summary>
+        public static bool operator !=(GenerationSettings? left, GenerationSettings? right)
+        {
+            return !Equals(left, right);
+        }
+
+        object ICloneable.Clone() { return Clone(); }
         #endregion
     }
 }
