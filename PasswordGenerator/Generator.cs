@@ -36,7 +36,7 @@ namespace PasswordGenerator
     /// </example>
     public static class Generator
     {
-        private static readonly string[] setNames = Enum.GetNames<CharacterSet>();
+        private static readonly CharacterSet[] characterSets = Enum.GetValues<CharacterSet>();
 
         /// <summary>
         /// A static method for generating a password as a string Generate(GenerationSettings).
@@ -76,15 +76,15 @@ namespace PasswordGenerator
 
         private static void BaseFill(StringBuilder result, GenerationSettings settings)
         {
-            foreach (string name in setNames)
+            foreach (CharacterSet set in characterSets)
             {
-                if (settings.UseCharacterSet(name))
+                if (settings.UseCharacterSet(set))
                 {
                     int k = RandomNumberGenerator.GetInt32(0, settings.ExtraCharsPerSet);
-                    result.Append(GetRandomChar(settings[name]));
+                    result.Append(GetRandomChar(settings[set]));
                     for (int i = 0; i < k; i++)
                     {
-                        result.Append(GetRandomChar(settings[name]));
+                        result.Append(GetRandomChar(settings[set]));
                     }
                 }
             }
