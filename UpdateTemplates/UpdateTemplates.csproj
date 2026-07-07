@@ -12,25 +12,15 @@
      <Readme>README.md</Readme>
      <License>LECENSE.txt</License>
      <BuildTime>BuildTime.txt</BuildTime>
+     <TextTransformPath Condition="'$(TextTransformPath)'==''">
+       $(DevEnvDir)CommonExtensions\Microsoft\TextTemplating\TextTransform.exe
+     </TextTransformPath>
   </PropertyGroup>
   
   <ItemGroup>
-    
-    <None Include="BuildTime.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>$(BuildTime)</LastGenOutput>
-    </None>
-    
-    <None Include="LICENSE.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>$(License)</LastGenOutput>
-    </None>
-    
-    <None Include="README.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>$(Readme)</LastGenOutput>
-    </None>
-    
+      <None Include="BuildTime.tt" />
+      <None Include="LICENSE.tt" />
+      <None Include="README.tt" />
   </ItemGroup>
 
   <ItemGroup>

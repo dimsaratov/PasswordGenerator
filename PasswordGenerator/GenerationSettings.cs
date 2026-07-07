@@ -17,43 +17,24 @@ namespace PasswordGenerator
     /// Represents configurable settings for password generation.
     /// </summary>
     /// <remarks>
-    /// This class holds all parameters required by the <see cref="Generator"/> to produce passwords.
-    /// It implements <see cref="INotifyPropertyChanged"/> to facilitate two-way data binding in UI applications
-    /// (e.g., WPF, MAUI, WinForms).
-    /// <para>
-    /// The settings include:
-    /// <list type="bullet">
-    /// <item><description>Character sets (lowercase, uppercase, digits, symbols) with individual enable/disable flags.</description></item>
-    /// <item><description>Minimum and maximum password length, with automatic synchronization to keep MinLength ≤ MaxLength.</description></item>
-    /// <item><description>Customizable set of special characters (default: ~`!@#$%^&amp;*()-_=+[]{};:'"",./&lt;&gt;?|\).</description></item>
-    /// <item><description><see cref="ExtraCharsPerSet"/> – controls how many additional characters (beyond the guaranteed one) are added from each enabled set.</description></item>
-    /// </list>
-    /// </para>
-    /// <para>
-    /// The <see cref="IsCorrect"/> property validates that at least one character set is enabled.
-    /// The <see cref="GetCharacterSet"/> method returns the combined string of all enabled character sets.
-    /// The <see cref="GetLength"/> method provides a cryptographically secure random length within the Min/Max bounds.
-    /// </para>
+    /// This class holds all parameters required by the <see cref="Generator"/> to produce passwords. It implements <see
+    /// cref="INotifyPropertyChanged"/> to facilitate two-way data binding in UI applications (e.g., WPF, MAUI,
+    /// WinForms). <para> The settings include:<list type="bullet"><item><description>Character sets (lowercase,
+    /// uppercase, digits, symbols) with individual enable/disable flags.</description></item><item><description>Minimum
+    /// and maximum password length, with automatic synchronization to keep MinLength ≤
+    /// MaxLength.</description></item><item><description>Customizable set of special characters (default:
+    /// ~`!@#$%^&amp;*()-_=+[]{};:'"",./&lt;&gt;?|\).</description></item><item><description><see
+    /// cref="ExtraCharsPerSet"/> – controls how many additional characters (beyond the guaranteed one) are added from
+    /// each enabled set.</description></item></list></para> <para> The <see cref="IsCorrect"/> property validates that
+    /// at least one character set is enabled. The <see cref="GetCharacterSet"/> method returns the combined string of
+    /// all enabled character sets. The <see cref="GetLength"/> method provides a cryptographically secure random length
+    /// within the Min/Max bounds.</para>
     /// </remarks>
     /// <example>
-    /// <code>
-    /// var settings = new GenerationSettings
-    /// {
-    ///     UseLowercase = true,
-    ///     UseUppercase = true,
-    ///     UseDigits = true,
-    ///     UseSymbols = true,
-    ///     MinLength = 12,
-    ///     MaxLength = 20,
-    ///     ExtraCharsPerSet = 2,
-    ///     SpecialChars = new[] { '!', '@', '#', '$', '%' }
-    /// };
-    /// // Verify settings are valid
-    /// if (settings.IsCorrect)
-    /// {
-    ///     string password = Generator.Generate(settings);
-    /// }
-    /// </code>
+    /// <code> var settings = new GenerationSettings { UseLowercase = true, UseUppercase = true, UseDigits = true,
+    /// UseSymbols = true, MinLength = 12, MaxLength = 20, ExtraCharsPerSet = 2, SpecialChars = new[] { '!', '@', '#',
+    /// '$', '%' } }; // Verify settings are valid if (settings.IsCorrect) { string password =
+    /// Generator.Generate(settings); }</code>
     /// </example>
     public class GenerationSettings : INotifyPropertyChanged
     {
@@ -62,6 +43,8 @@ namespace PasswordGenerator
         private PropertyChangedEventHandler? onPropertyChanged;
         private int min = 8;
         private int max = 16;
+        private bool useUppercase = true;
+        private bool useLowercase = true;
 
         #region Property
 
@@ -129,13 +112,9 @@ namespace PasswordGenerator
         }
 
         /// <summary>
-        ///It is guaranteed that at least one character
-        ///from each active set will be added,
-        ///and an additional number will be randomly
-        ///selected (from 0 to ExtraCharsPerSet - 1).
-        ///The total number in the set will be at
-        ///least = 1 + random(0 ... ExtraCharsPerSet-1).
-        ///Default value = 3
+        /// It is guaranteed that at least one character from each active set will be added, and an additional number
+        /// will be randomly selected (from 0 to ExtraCharsPerSet - 1). The total number in the set will be at least = 1
+        /// + random(0 ... ExtraCharsPerSet-1). Default value = 3
         /// </summary>
         public int ExtraCharsPerSet
         {
@@ -151,9 +130,8 @@ namespace PasswordGenerator
         } = 3;
 
         /// <summary>
-        ///Сollection of special characters for password generation.
-        ///Default value ~`!@#$%^&amp;*()-_=+[]{};:'"",./&lt;&gt;?|\
-        ///The number of special characters must be at least 3
+        /// Сollection of special characters for password generation. Default value ~`!@#$%^&amp;*()-
+        /// _=+[]{};:'"",./&lt;&gt;?|\ The number of special characters must be at least 3
         /// </summary>
         public char[] SpecialChars
         {
@@ -164,23 +142,56 @@ namespace PasswordGenerator
                 char[] valueChars = GetSpecialChars(value);
                 if (valueChars.Length < 3)
                 {
-                    throw new ArgumentException("The argument does not contain any supported special characters or less than the minimum number (3).");
+                    throw new ArgumentException(
+                        "The argument does not contain any supported special characters or less than the minimum number (3).");
                 }
                 field = valueChars;
-                Symbols = new(valueChars);
+                Symbols = new(field);
                 OnPropertyChanged(new PropertyChangedEventArgs(nameof(SpecialChars)));
             }
         }
 
         /// <summary>
-        ///  Use uppercase letters. Default value True
+        /// Use uppercase letters. Default value True
         /// </summary>
-        public bool UseUppercase { get; set; } = true;
+        public bool UseUppercase
+        {
+            get => useUppercase;
+            set
+            {
+                if (useUppercase != value)
+                {
+                    useUppercase = value;
+                    OnPropertyChanged(new PropertyChangedEventArgs(nameof(UseUppercase)));
+                    if (!value && !UseLowercase)
+                    {
+                        useLowercase = true;
+                        OnPropertyChanged(new PropertyChangedEventArgs(nameof(UseLowercase)));
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Use lowercase letters. Default value True
         /// </summary>
-        public bool UseLowercase { get; set; } = true;
+        public bool UseLowercase
+        {
+            get => useLowercase;
+            set
+            {
+                if (useLowercase != value)
+                {
+                    useLowercase = value;
+                    OnPropertyChanged(new PropertyChangedEventArgs(nameof(UseLowercase)));
+                    if (!value && !UseUppercase)
+                    {
+                        useUppercase = true;
+                        OnPropertyChanged(new PropertyChangedEventArgs(nameof(UseUppercase)));
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Use digital characters. Default value True
@@ -228,10 +239,14 @@ namespace PasswordGenerator
 
         #region Events
 
-        /// <summary>Occurs when a property value changes.</summary>
+        /// <summary>
+        /// Occurs when a property value changes.
+        /// </summary>
         protected virtual void OnPropertyChanged(PropertyChangedEventArgs e) { onPropertyChanged?.Invoke(this, e); }
 
-        /// <summary>Occurs when a property value changes.</summary>
+        /// <summary>
+        /// Occurs when a property value changes.
+        /// </summary>
         public event PropertyChangedEventHandler? PropertyChanged
         {
             add => onPropertyChanged += value;
@@ -255,26 +270,24 @@ namespace PasswordGenerator
         /// Determines whether the specified character set is currently enabled.
         /// </summary>
         /// <param name="setName">
-        /// The name of the character set to check. Must match one of the following:
-        /// <c>nameof(Lowercase)</c>, <c>nameof(Uppercase)</c>, <c>nameof(Digits)</c>, or <c>nameof(Symbols)</c>.
+        /// The name of the character set to check. Must match one of the following: <c>nameof(Lowercase)</c>,
+        /// <c>nameof(Uppercase)</c>, <c>nameof(Digits)</c>, or <c>nameof(Symbols)</c>.
         /// </param>
         /// <returns>
-        /// <c>true</c> if the character set is enabled; otherwise, <c>false</c>.
-        /// If the provided name does not match any known set, <c>false</c> is returned.
+        /// <c>true</c> if the character set is enabled; otherwise, <c>false</c>. If the provided name does not match
+        /// any known set, <c>false</c> is returned.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// Thrown when <paramref name="setName"/> is <c>null</c> or an empty string.
         /// </exception>
         /// <remarks>
-        /// This method is primarily used by the generator to iterate over all available character sets
-        /// and determine which ones should be included in the password.
+        /// This method is primarily used by the generator to iterate over all available character sets and determine
+        /// which ones should be included in the password.
         /// </remarks>
         /// <example>
-        /// <code>
-        /// var settings = new GenerationSettings();
-        /// bool useLower = settings.UseCharacterSet(nameof(GenerationSettings.Lowercase));
-        /// Console.WriteLine($"Lowercase enabled: {useLower}");
-        /// </code>
+        /// <code> var settings = new GenerationSettings(); bool useLower =
+        /// settings.UseCharacterSet(nameof(GenerationSettings.Lowercase)); Console.WriteLine($"Lowercase enabled:
+        /// {useLower}");</code>
         /// </example>
         public bool UseCharacterSet(string setName)
         {
@@ -293,28 +306,24 @@ namespace PasswordGenerator
         /// Gets the character string for the specified character set.
         /// </summary>
         /// <param name="setName">
-        /// The name of the character set to retrieve. Must match one of the following:
-        /// <c>nameof(Lowercase)</c>, <c>nameof(Uppercase)</c>, <c>nameof(Digits)</c>, or <c>nameof(Symbols)</c>.
+        /// The name of the character set to retrieve. Must match one of the following: <c>nameof(Lowercase)</c>,
+        /// <c>nameof(Uppercase)</c>, <c>nameof(Digits)</c>, or <c>nameof(Symbols)</c>.
         /// </param>
         /// <returns>
-        /// A <see cref="string"/> containing all characters of the requested set.
-        /// If <paramref name="setName"/> does not match any known set, an empty string is returned.
+        /// A <see cref="string"/> containing all characters of the requested set. If <paramref name="setName"/> does
+        /// not match any known set, an empty string is returned.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// Thrown when <paramref name="setName"/> is <c>null</c> or an empty string.
         /// </exception>
         /// <remarks>
-        /// This indexer provides a convenient way to obtain character set strings by name,
-        /// primarily used by the <see cref="Generator"/> during password construction.
-        /// The available names correspond to the public properties <see cref="Lowercase"/>,
-        /// <see cref="Uppercase"/>, <see cref="Digits"/>, and <see cref="Symbols"/>.
+        /// This indexer provides a convenient way to obtain character set strings by name, primarily used by the <see
+        /// cref="Generator"/> during password construction. The available names correspond to the public properties
+        /// <see cref="Lowercase"/>, <see cref="Uppercase"/>, <see cref="Digits"/>, and <see cref="Symbols"/>.
         /// </remarks>
         /// <example>
-        /// <code>
-        /// var settings = new GenerationSettings();
-        /// string lowercase = settings[nameof(GenerationSettings.Lowercase)];
-        /// Console.WriteLine($"Lowercase: {lowercase}");
-        /// </code>
+        /// <code> var settings = new GenerationSettings(); string lowercase =
+        /// settings[nameof(GenerationSettings.Lowercase)]; Console.WriteLine($"Lowercase: {lowercase}");</code>
         /// </example>
         public string this[string setName]
         {
@@ -335,22 +344,15 @@ namespace PasswordGenerator
         /// <summary>
         /// Sets the default set of special characters
         /// </summary>
-        public void DefaultSpecialChars()
-        {
-            SpecialChars = [.. allowedSet];
-        }
+        public void DefaultSpecialChars() { SpecialChars = [.. allowedSet]; }
 
         /// <summary>
-        ///If MaxLength is not equal to MinLength,
-        ///returns an arbitrary length for the password
-        ///in the range from MaxLength to minLength,
-        ///otherwise returns MinLength.
+        /// If MaxLength is not equal to MinLength, returns an arbitrary length for the password in the range from
+        /// MaxLength to minLength, otherwise returns MinLength.
         /// </summary>
         /// <returns></returns>
         public int GetLength()
-        {
-            return MinLength == MaxLength ? MinLength : RandomNumberGenerator.GetInt32(MinLength, MaxLength + 1);
-        }
+        { return MinLength == MaxLength ? MinLength : RandomNumberGenerator.GetInt32(MinLength, MaxLength + 1); }
 
 
         /// <summary>
@@ -385,16 +387,9 @@ namespace PasswordGenerator
         /// Generates and returns a new password according to the current settings
         /// </summary>
         /// <returns></returns>
-        public SecureString GetNewPassword()
-        {
-            return Generator.Generate(this).ToSecureString();
-        }
+        public SecureString GetNewPassword() { return Generator.Generate(this).ToSecureString(); }
 
-        private char[] GetSpecialChars(char[] input)
-        {
-            return [.. input.Where(allowedSet.Contains)];
-        }
-
+        private char[] GetSpecialChars(char[] input) { return [.. input.Where(allowedSet.Contains)]; }
         #endregion
     }
 }
