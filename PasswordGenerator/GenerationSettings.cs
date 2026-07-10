@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace PasswordGenerator
 {
@@ -39,7 +40,11 @@ namespace PasswordGenerator
         /// <summary>
         /// A basic set of special characters for password generation
         /// </summary>
-        public const string BaseChars = @"~`!@#$%^&*()-_=+[]{};:'"",./<>?|\";
+        public const string BaseChars = @"~!@#$%^&*()-_=+[]{};:'"",./<>?|\";
+        private const string lowercaseChars = "abcdefghijklmnopqrstuvwxyz";
+        private const string uppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        private const string digitalChars = "0123456789";
+
         #region Variable
         private readonly Dictionary<string, List<string>> _errors = [];
         private readonly HashSet<char> allowSpecialChars;
@@ -66,17 +71,17 @@ namespace PasswordGenerator
         /// <summary>
         /// String of lowercase
         /// </summary>
-        public string Lowercase { get; } = "abcdefghijklmnopqrstuvwxyz";
+        public static string Lowercase => lowercaseChars;
 
         /// <summary>
         /// String of uppercase
         /// </summary>
-        public string Uppercase { get; } = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        public static string Uppercase => uppercaseChars;
 
         /// <summary>
         /// String of digits
         /// </summary>
-        public string Digits { get; } = "0123456789";
+        public static string Digits => digitalChars;
 
         /// <summary>
         /// String of special characters
@@ -101,6 +106,7 @@ namespace PasswordGenerator
         /// <para><b>Validation:</b> At least 3 supported characters must be provided. If validation fails, an error is
         /// added via <see cref="INotifyDataErrorInfo"/> and the current set remains unchanged.</para>
         /// </remarks>
+        [JsonIgnore]
         public char[] SpecialChars { get => [.. currentSpecialChars]; set => SetSpecialCharsInternal(value); }
 
         /// <summary>
